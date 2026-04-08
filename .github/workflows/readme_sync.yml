@@ -1,0 +1,44 @@
+name: Sync README from profile.json
+
+on:
+  push:
+    paths:
+      - 'profile.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  models: read
+
+jobs:
+  sync-readme:
+    runs-on: ubuntu-latest
+    name: Update README from profile.json
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run README update script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node update_readme.js
+
+      - name: Commit updated README
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "No changes to README — skipping commit"
+          else
+            DATE=$(date +%Y-%m-%d)
+            git commit -m "chore: auto-update README from profile.json — ${DATE}"
+            git push
+            echo "README pushed successfully"
+          fi
